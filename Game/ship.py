@@ -1,13 +1,15 @@
 class Ship:
 
-    def __init__(self, coord):
+    def __init__(self, name, coord):
         self.coord = coord
-
-    def register_hit(self):
-        self.hits +=1
+        self.name = name  
+        self.hits = set()  
+    def register_hit(self, coord):
+        self.hits.add(coord) 
 
     def is_sunk(self):
-        return self.hits == len(self.coord)
+        return len(self.hits) == len(self.coord)
         
-ship1 = Ship([(1,1), (1,2), (1,3)])
+ship1 = Ship("destroyer", [(1,1), (1,2), (1,3)])
 print(ship1.coord)
+print(ship1.name)
