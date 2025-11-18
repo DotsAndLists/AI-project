@@ -16,7 +16,6 @@ gs.ai_board.add_ship(Ship("Submarine", [(3,0), (3,1)]))
 
 # Function to display board nicely
 def display_board(board, reveal_ships=False):
-    # Flip board so bottom row is 0
     for r in reversed(range(board.size)):
         row_display = []
         for c in range(board.size):
@@ -30,15 +29,16 @@ def display_board(board, reveal_ships=False):
             else:
                 row_display.append(".")
         print(" ".join(row_display))
-    print()  # blank line
+    print()
 
 # Keep track of AI moves to avoid repeats
 ai_possible_moves = [(r, c) for r in range(gs.size) for c in range(gs.size)]
 
 # Main game loop
 while not gs.game_over:
-    os.system('cls' if os.name == 'nt' else 'clear')  # optional clear screen
-    
+    # Removed screen clearing so scroll works
+    # os.system('cls' if os.name == 'nt' else 'clear')
+
     print("Your board:")
     display_board(gs.player_board, reveal_ships=True)
     
@@ -47,10 +47,25 @@ while not gs.game_over:
     
     # Player move
     while True:
+        raw_col = input(f"Enter column (1-{gs.size}) or type 'quit': ").strip().lower()
+        if raw_col in ["quit", "stop"]:
+            print("Game ended by player.")
+            gs.game_over = True
+            gs.winner = "none"
+            break
+
+        raw_row = input(f"Enter row (1-{gs.size}) or type 'quit': ").strip().lower()
+        if raw_row in ["quit", "stop"]:
+            print("Game ended by player.")
+            gs.game_over = True
+            gs.winner = "none"
+            break
+
         try:
-            col = int(input(f"Enter column (1-{gs.size}): ")) - 1
-            row = int(input(f"Enter row (1-{gs.size}): ")) - 1
+            col = int(raw_col) - 1
+            row = int(raw_row) - 1
             coord = (row, col)
+
             if coord in [move["coord"] for move in gs.player_moves]:
                 print("You already shot there! Try again.")
             elif row < 0 or row >= gs.size or col < 0 or col >= gs.size:
@@ -59,18 +74,32 @@ while not gs.game_over:
                 break
         except ValueError:
             print("Invalid input. Enter numbers only.")
-    
+
+    if gs.game_over:
+        break
+
     result = gs.make_move(coord)
     print(f"You fired at ({col+1},{row+1}): {result}\n")
-    
+
     if gs.game_over:
         break
     
     # AI move
     ai_coord = random.choice(ai_possible_moves)
-    ai_possible_moves.remove(ai_coord)  # remove so AI cannot repeat
+    ai_possible_moves.remove(ai_coord)
     ai_result = gs.make_move(ai_coord)
     print(f"AI fired at ({ai_coord[1]+1},{ai_coord[0]+1}): {ai_result}\n")
-    
-print("Game Over!")
-print(f"Winner: {gs.winner}")
+
+
+if gs.winner == "player":
+    print("Congratulations, you won!")
+elif gs.winner == "ai":
+    print("The AI won. Better luck next time!")
+else:
+    print("Game ended early.")
+
+print("\nFinal Player Board:")
+display_board(gs.player_board, reveal_ships=True)
+
+print("Final Opponent Board:")
+display_board(gs.ai_board, reveal_ships=True)  # reveal so you can see AI ships at the end
