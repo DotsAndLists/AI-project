@@ -59,5 +59,10 @@ class Board:
         self.grid[coord] = "miss"       #not in grid yet means it missed, dont need else cuz it will go thru if first and return if not a miss
         return "miss"
 
+    def all_ships_sunk(self):
+        # Return True only if every ship on this board is sunk
+        return all(ship.is_sunk() for ship in self.ships)
 
+
+    
 #tester

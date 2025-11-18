@@ -10,6 +10,6 @@ class Ship:
     def is_sunk(self):
         return len(self.hits) == len(self.coord)
         
-ship1 = Ship("destroyer", [(1,1), (1,2), (1,3)])
-print(ship1.coord)
-print(ship1.name)
+# ship1 = Ship("destroyer", [(1,1), (1,2), (1,3)])
+# print(ship1.coord)
+# print(ship1.name)
