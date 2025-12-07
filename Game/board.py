@@ -63,6 +63,62 @@ class Board:
         # Return True only if every ship on this board is sunk
         return all(ship.is_sunk() for ship in self.ships)
 
-
+    def place_ships_randomly(self, ship_configs):
+        import random
+        from Game.ship import Ship
+        
+        # Limit retries so it doesn't freeze if the board is too full
+        MAX_ATTEMPTS = 100 
+        
+        for name, size in ship_configs:
+            placed = False
+            attempts = 0
+            
+            while not placed and attempts < MAX_ATTEMPTS:
+                attempts += 1
+                
+                # Randomize orientation and start
+                orientation = random.choice(["H", "V"])
+                r = random.randint(0, self.size - 1)
+                c = random.randint(0, self.size - 1)
+                
+                new_coords = []
+                
+                # generate potential coordinates
+                if orientation == "H":
+                    if c + size <= self.size:
+                        new_coords = [(r, c+i) for i in range(size)]
+                else: # Vertical
+                    if r + size <= self.size:
+                        new_coords = [(r+i, c) for i in range(size)]
+                
+                # --- THE NEW VALIDATION LOGIC ---
+                if new_coords:
+                    is_valid = True
+                    
+                    for (nr, nc) in new_coords:
+                        # Check the cell itself AND its neighbors
+                        # We look at range -1 to +1 for both row and col
+                        # This creates a 3x3 box around every ship segment
+                        for dr in [-1, 0, 1]:
+                            for dc in [-1, 0, 1]:
+                                neighbor_r = nr + dr
+                                neighbor_c = nc + dc
+                                
+                                # If ANY neighbor has a ship, this placement is illegal
+                                if self.grid.get((neighbor_r, neighbor_c)) == "ship":
+                                    is_valid = False
+                                    break
+                            if not is_valid: break
+                        if not is_valid: break
+                    
+                    # If valid, actually place the ship
+                    if is_valid:
+                        new_ship = Ship(name, new_coords)
+                        self.add_ship(new_ship)
+                        placed = True
+            
+            if not placed:
+                print(f"Warning: Could not place {name} after {MAX_ATTEMPTS} attempts.")
     
 #tester

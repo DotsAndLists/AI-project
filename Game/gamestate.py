@@ -70,3 +70,12 @@ class GameState:
             self.winner = "ai"
 
     
+    def make_move_simulation(self, coord):
+        """
+        A faster version of make_move just for the simulation.
+        It strictly fires at the AI board (the target).
+        """
+        # We always fire at the AI_BOARD in this simulation because 
+        # we are testing the AI's ability to hunt, not defend.
+        result = self.ai_board.receive_shot(coord)
+        return result
