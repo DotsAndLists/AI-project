@@ -2,6 +2,11 @@ import pygame
 import sys
 import time
 
+#HOW TO RUN: arjundeshpande@MacBookPro AI-project % python3 -m venv venv
+#arjundeshpande@MacBookPro AI-project % source venv/bin/activate
+#You must use the above commands to activate the virtual environment
+#Then install pygame ce : pip install pygame-ce
+
 # --- IMPORT YOUR MODULES ---
 from Game.gamestate import GameState
 from Game.ship import Ship  # Needed to create ships manually
