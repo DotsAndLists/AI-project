@@ -1,15 +1,12 @@
-def get_probability_grid(board, remaining_ships):
+def get_probability_grid(board, remaining_ships, rl_brain=None): # <--- Added rl_brain param
     """
     Generates a probability grid based on the remaining ships and the current board state.
-    Now accounts for the rule: SHIPS CANNOT TOUCH.
+    Now accounts for the rule: SHIPS CANNOT TOUCH + RL BIAS.
     """
     size = board.size
     prob_grid = [[0 for _ in range(size)] for _ in range(size)]
 
     # --- STEP 1: CREATE FORBIDDEN ZONES ---
-    # We identify spots where ships definitely CANNOT be.
-    # 1. Misses
-    # 2. Sunk Ships (and their neighbors!)
     forbidden_mask = set()
 
     # Add all known misses
@@ -22,11 +19,8 @@ def get_probability_grid(board, remaining_ships):
     for ship in board.ships:
         if ship.is_sunk():
             for (sr, sc) in ship.coord:
-                # Add the ship part itself
                 forbidden_mask.add((sr, sc))
-                
-                # Add all 8 neighbors (The Buffer Zone)
-                # Because no OTHER ship can touch this sunk ship
+                # Add neighbors
                 for dr in [-1, 0, 1]:
                     for dc in [-1, 0, 1]:
                         nr, nc = sr + dr, sc + dc
@@ -42,59 +36,44 @@ def get_probability_grid(board, remaining_ships):
             for c in range(size - length + 1): 
                 possible_coords = []
                 valid_placement = True
-                
                 for i in range(length):
                     coord = (r, c + i)
-                    
-                    # NEW CHECK: Is this spot forbidden?
-                    # (This covers misses, sunk ships, AND the buffer zones around sunk ships)
                     if coord in forbidden_mask:
-                        valid_placement = False
-                        break
-                        
-                    # Also check "already_hit"
-                    # If we hit something that ISN'T sunk, we can overlap it (it might be us!)
-                    # But if we overlap a hit that IS sunk, forbidden_mask catches it.
-                    if board.grid.get(coord) == "already_hit" and coord not in forbidden_mask:
-                         # Valid to assume this hit belongs to the ship we are testing
-                         pass
-                    elif board.grid.get(coord) == "already_hit":
-                         # If it's a hit inside a forbidden zone (impossible?), mark invalid
-                         valid_placement = False
-                         break
-
+                        valid_placement = False; break
+                    if board.grid.get(coord) == "already_hit" and coord not in forbidden_mask: pass
+                    elif board.grid.get(coord) == "already_hit": valid_placement = False; break
                     possible_coords.append(coord)
                 
                 if valid_placement:
                     for (pr, pc) in possible_coords:
-                        # Weight it slightly higher if it overlaps an existing active hit
-                        # (Encourages targeting the rest of a found ship)
-                        if board.grid.get((pr, pc)) == "already_hit":
-                            prob_grid[pr][pc] += 10 # massive bonus to finish ships
-                        else:
-                            prob_grid[pr][pc] += 1
+                        weight = 10 if board.grid.get((pr, pc)) == "already_hit" else 1
+                        prob_grid[pr][pc] += weight
 
         # Try Vertical Placements
         for r in range(size - length + 1):
             for c in range(size):
                 possible_coords = []
                 valid_placement = True
-                
                 for i in range(length):
                     coord = (r + i, c)
-                    
                     if coord in forbidden_mask:
-                        valid_placement = False
-                        break
-
+                        valid_placement = False; break
+                    if board.grid.get(coord) == "already_hit" and coord not in forbidden_mask: pass
+                    elif board.grid.get(coord) == "already_hit": valid_placement = False; break
                     possible_coords.append(coord)
                 
                 if valid_placement:
                     for (pr, pc) in possible_coords:
-                        if board.grid.get((pr, pc)) == "already_hit":
-                            prob_grid[pr][pc] += 10
-                        else:
-                            prob_grid[pr][pc] += 1
+                        weight = 10 if board.grid.get((pr, pc)) == "already_hit" else 1
+                        prob_grid[pr][pc] += weight
+
+    # --- STEP 3: APPLY REINFORCEMENT LEARNING BIAS ---
+    if rl_brain:
+        for r in range(size):
+            for c in range(size):
+                if board.grid.get((r, c)) not in ["miss", "already_hit"]:
+                    bias = rl_brain.get_bias_score(r, c)
+                    prob_grid[r][c] += bias
                         
     return prob_grid
 

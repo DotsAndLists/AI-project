@@ -2,16 +2,17 @@ import pygame
 import sys
 import time
 
-#HOW TO RUN: arjundeshpande@MacBookPro AI-project % python3 -m venv venv
-#arjundeshpande@MacBookPro AI-project % source venv/bin/activate
-#You must use the above commands to activate the virtual environment
-#Then install pygame ce : pip install pygame-ce
-
 # --- IMPORT YOUR MODULES ---
 from Game.gamestate import GameState
 from Game.ship import Ship
 from ai.search import SearchAI
 from ai.heuristics import get_probability_grid
+from ai.learning import RLBrain  # <--- NEW IMPORT
+
+#HOW TO RUN: arjundeshpande@MacBookPro AI-project % python3 -m venv venv
+#arjundeshpande@MacBookPro AI-project % source venv/bin/activate
+#You must use the above commands to activate the virtual environment
+#Then install pygame ce : pip install pygame-ce
 
 # --- CONFIGURATION ---
 WINDOW_WIDTH = 1100
@@ -144,6 +145,7 @@ def main():
     
     gs = GameState(BOARD_SIZE)
     ai_bot = SearchAI(gs.size)
+    rl_brain = RLBrain(gs.size)  # <--- NEW: Initialize Learning Brain
     gs.ai_board.place_ships_randomly(fleets)
 
     ships_to_place = list(fleets) 
@@ -222,8 +224,21 @@ def main():
                                     message_color = GOLD
                                 
                                 if gs.game_over:
-                                    game_message = f"VICTORY! You destroyed the enemy fleet!"
+                                    # 1. SHOW LEARNING MESSAGE
+                                    SCREEN.fill(BG_COLOR)
+                                    learn_msg = BIG_FONT.render("Match Finished. Updating AI Memory...", True, GOLD)
+                                    msg_rect = learn_msg.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2))
+                                    SCREEN.blit(learn_msg, msg_rect)
+                                    pygame.display.flip()
+                                    pygame.time.wait(1000) # Pause so user sees it
+
+                                    # 2. PERFORM LEARNING
+                                    rl_brain.learn_from_game(gs.player_board)
+
+                                    # 3. SET FINAL VICTORY MESSAGE
+                                    game_message = f"VICTORY! Enemy fleet destroyed. (AI Learned)"
                                     message_color = SUCCESS_GREEN
+
                             else:
                                 game_message = "You already shot there!"
                                 message_color = WHITE
@@ -236,7 +251,8 @@ def main():
             pygame.display.flip() 
             pygame.time.wait(600) 
             
-            ai_move = ai_bot.get_next_move(gs.player_board)
+            # --- NEW: PASS rl_brain TO AI ---
+            ai_move = ai_bot.get_next_move(gs.player_board, rl_brain)
             ai_result = gs.make_move(ai_move)
             ai_bot.update_result(ai_move, ai_result, gs.player_board)
             
@@ -259,7 +275,19 @@ def main():
                 message_color = GOLD
 
             if gs.game_over:
-                game_message = f"DEFEAT! The AI won."
+                # 1. SHOW LEARNING MESSAGE
+                SCREEN.fill(BG_COLOR)
+                learn_msg = BIG_FONT.render("Match Finished. Updating AI Memory...", True, GOLD)
+                msg_rect = learn_msg.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2))
+                SCREEN.blit(learn_msg, msg_rect)
+                pygame.display.flip()
+                pygame.time.wait(1000) # Pause so user sees it
+
+                # 2. PERFORM LEARNING
+                rl_brain.learn_from_game(gs.player_board)
+
+                # 3. SET FINAL DEFEAT MESSAGE
+                game_message = f"DEFEAT! The AI won. (AI Learned)"
                 message_color = DANGER_RED
 
         # --- DRAWING ---

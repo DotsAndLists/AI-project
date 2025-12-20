@@ -3,6 +3,7 @@ from Game.board import Board
 from Game.ship import Ship
 from Game.gamestate import GameState
 from ai.search import SearchAI
+from ai.learning import RLBrain  # <--- NEW IMPORT
 
 # --- 1. CONFIGURATION & SETUP ---
 
@@ -39,6 +40,9 @@ gs = GameState(BOARD_SIZE)
 
 # Initialize the Smart AI
 ai_bot = SearchAI(gs.size)
+
+# Initialize the Learning Brain
+rl_brain = RLBrain(gs.size)  # <--- NEW: Load memory
 
 # Place ships randomly using the specific fleet list
 gs.player_board.place_ships_randomly(fleets)
@@ -126,7 +130,8 @@ while not gs.game_over:
         break
     
     # AI move
-    ai_coord = ai_bot.get_next_move(gs.player_board)
+    # NEW: Pass the rl_brain to the get_next_move function
+    ai_coord = ai_bot.get_next_move(gs.player_board, rl_brain)
     ai_result = gs.make_move(ai_coord)
     ai_bot.update_result(ai_coord, ai_result, gs.player_board)
     
@@ -145,3 +150,9 @@ display_board(gs.player_board, reveal_ships=True)
 
 print("Final Opponent Board:")
 display_board(gs.ai_board, reveal_ships=True)  # reveal so you can see AI ships at the end
+
+# --- NEW: TRAINING STEP ---
+if gs.game_over:
+    print("Training AI on match results...")
+    rl_brain.learn_from_game(gs.player_board)
+    print("AI Memory Updated.")

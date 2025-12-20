@@ -7,22 +7,26 @@ class SearchAI:
         self.target_stack = [] 
         self.current_hits = [] # NEW: Tracks the specific hits on the current ship
 
-    def get_next_move(self, opponent_board):
+    def get_next_move(self, opponent_board, rl_brain=None): # <--- Accept rl_brain
         if self.mode == "target":
+            # ... (Target Mode logic stays exactly the same) ...
             if self.target_stack:
                 next_target = self.target_stack.pop()
                 while next_target in opponent_board.shots_taken:
                     if not self.target_stack:
                         self.mode = "hunt"
-                        return self.get_next_move(opponent_board) # Recurse to get hunt move
+                        return self.get_next_move(opponent_board, rl_brain) # Pass it here too
                     next_target = self.target_stack.pop()
                 return next_target
             else:
                 self.mode = "hunt"
         
-        # Hunt Mode logic (unchanged)
+        # Hunt Mode logic 
         remaining_ships = [s for s in opponent_board.ships if not s.is_sunk()]
-        probs = get_probability_grid(opponent_board, remaining_ships)
+        
+        # PASS THE BRAIN TO THE HEURISTIC
+        probs = get_probability_grid(opponent_board, remaining_ships, rl_brain)
+        
         move = get_best_hunt_move(opponent_board, probs)
         
         if move is None:
